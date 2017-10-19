@@ -10,7 +10,10 @@ logger = logging.getLogger()
 logger.setLevel(logging.WARN)
 
 import argparse
+import boto
 import os
+import pprint
+import random
 import time
 
 from openshift_tools.cloud.aws.base import Base
@@ -28,9 +31,15 @@ def parse_args():
 
 def getVolumesByRegion(region):
     """ getInstancesByRegion(region) """
-    logger.debug("getInstanceStatusesByRegion(region): %s", region)
+    logger.debug("getVolumesByRegion(region): %s", region)
     region = Base(region, verbose=True)
     return region.ec2.get_all_volumes()
+
+def getSnapshotsByRegion(region):
+    """ getInstancesByRegion(region) """
+    logger.debug("getSnapshotsByRegion(region): %s", region)
+    region = Base(region, verbose=True)
+    return region.ec2.get_all_snapshots()
 
 def testVolume(volume, region="", args={}, ):
 
@@ -62,6 +71,19 @@ def testVolume(volume, region="", args={}, ):
 def getVolumeId(osid):
     return osid.split('/')[-1]
 
+def getAvailabilityZone(osid):
+    return osid.split('/')[-2]
+
+def getSnapshotsByVolumeId(volumeId, snapshots):
+    result = []
+
+    for snap in snapshots:
+        if snap.volume_id == volumeId:
+            result.append(snap)
+
+    #result.sort(cmp=lambda x,y: cmp(x.date, y.date))
+    return result
+
 def main():
     """ main() """
     logger.debug("main()")
@@ -79,6 +101,7 @@ def main():
     region = "us-east-1"
 
     volumes = getVolumesByRegion(region)
+    print "volumes count: %s" % len(volumes)
 
     volumeids = sorted([v.id for v in volumes])
 
@@ -89,11 +112,47 @@ def main():
         {'name': 'pvc-0250be99-90d9-11e7-8584-123713f594ec', 'id': 'aws://us-east-1c/vol-0c2e7342add799bb0', },
         {'name': 'pvc-02744467-94ca-11e7-b0cb-12b5519f9b58', 'id': 'aws://us-east-1c/vol-04f527a64d902913a', },
     ]
+    print "requireds count: %s" % len(requireds)
+
+    missings = []
 
     for required in requireds:
         if getVolumeId(required['id']) not in volumeids:
+            missings.append(required)
             print "problem: pvid not in volumeids [%s] [%s]" % (required['name'], required['id'])
 
+    print missings
+    print "missings count: %s" % len(missings)
+
+    snapshots = getSnapshotsByRegion(region)
+    snapshotnames = snapshots[0].volume_id
+
+    for missing in missings:
+        snaps = getSnapshotsByVolumeId(getVolumeId(missing['id']), snapshots)
+        random.shuffle(snaps)
+
+        latest_snap = None
+        for snap in snaps:
+            if not latest_snap:
+                latest_snap = snap
+
+            if boto.utils.parse_ts(snap.start_time) > boto.utils.parse_ts(latest_snap.start_time):
+                latest_snap = snap
+
+        print " ".join([
+            'aws ec2 create-volume',
+            '--region', region,
+            '--availability-zone', getAvailabilityZone(missing['id']),
+            ' --volume-type gp2',
+            '--snapshot-id', latest_snap.id,
+            '--tag-specifications "ResourceType=string,Tags=[{Key=name,Value=kubernetes-dynamic-%s},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=%s},{Key=old_volumeid,Value=%s}]"' % (missing['name'], latest_snap.id, missing['id']),
+            ';',
+        ])
+
+#aws ec2 create-volume --region us-east-1 --availability-zone us-east-1c  --volume-type gp2 --snapshot-id snap-0549c90cb17848fd1 --tag-specifications "ResourceType=string,Tags=[{Key=name,Value=kubernetes-dynamic-pvc-024940fb-7e2d-11e7-9104-125b034d2f46},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=snap-0549c90cb17848fd1},{Key=old_volumeid,Value=aws://us-east-1c/vol-036d1dd4491d03523}]"
+#aws ec2 create-volume --region us-east-1 --availability-zone us-east-1c  --volume-type gp2 --snapshot-id snap-09ada71e8650e3560 --tag-specifications "ResourceType=string,Tags=[{Key=name,Value=kubernetes-dynamic-pvc-0250be99-90d9-11e7-8584-123713f594ec},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=snap-09ada71e8650e3560},{Key=old_volumeid,Value=aws://us-east-1c/vol-0c2e7342add799bb0}]"
+#aws ec2 create-volume --region us-east-1 --availability-zone us-east-1c  --volume-type gp2 --snapshot-id snap-0dcac434b75e74f7f --tag-specifications "ResourceType=string,Tags=[{Key=name,Value=kubernetes-dynamic-pvc-02744467-94ca-11e7-b0cb-12b5519f9b58},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=snap-0dcac434b75e74f7f},{Key=old_volumeid,Value=aws://us-east-1c/vol-04f527a64d902913a}]"
+#
 
 if __name__ == "__main__":
     main()
