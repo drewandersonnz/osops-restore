@@ -59,6 +59,8 @@ def testVolume(volume, region="", args={}, ):
         '--instance-ids', volume.attach_data.instance_id,
     ])
 
+def getVolumeId(osid):
+    return osid.split('/')[-1]
 
 def main():
     """ main() """
@@ -78,12 +80,17 @@ def main():
 
     volumes = getVolumesByRegion(region)
 
-    volumeids = [v.id for v in volumes]
+    volumeids = sorted([v.id for v in volumes])
 
-    print volumeids
+    print "\n".join(volumeids)
 
     ospv = "pvc-02744467-94ca-11e7-b0cb-12b5519f9b58"
     osid = "aws://us-east-1c/vol-04f527a64d902913a"
+
+    if getVolumeId(osid) not in volumeids:
+        print "problem: pvid not in volumeids [%s] [%s]" % (ospv, osid)
+
+
 
     #for volume in volumes:
     #    testVolume(volume, region=region, args=args, )
