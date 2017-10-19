@@ -107,11 +107,17 @@ def main():
 
     print "\n".join(volumeids)
 
+#    requireds = [
+#        {'name': 'pvc-024940fb-7e2d-11e7-9104-125b034d2f46', 'id': 'aws://us-east-1c/vol-036d1dd4491d03523', },
+#        {'name': 'pvc-0250be99-90d9-11e7-8584-123713f594ec', 'id': 'aws://us-east-1c/vol-0c2e7342add799bb0', },
+#        {'name': 'pvc-02744467-94ca-11e7-b0cb-12b5519f9b58', 'id': 'aws://us-east-1c/vol-04f527a64d902913a', },
+#    ]
+#
     requireds = [
-        {'name': 'pvc-024940fb-7e2d-11e7-9104-125b034d2f46', 'id': 'aws://us-east-1c/vol-036d1dd4491d03523', },
-        {'name': 'pvc-0250be99-90d9-11e7-8584-123713f594ec', 'id': 'aws://us-east-1c/vol-0c2e7342add799bb0', },
-        {'name': 'pvc-02744467-94ca-11e7-b0cb-12b5519f9b58', 'id': 'aws://us-east-1c/vol-04f527a64d902913a', },
+        {'name': 'pvc-fc1c5be5-a785-11e7-82f8-0a46c474dfe0', 'id': 'aws://us-east-1c/vol-0a78dfd8f7cec4650', },
+        {'name': 'pvc-422c7fa0-b519-11e7-92e8-0a46c474dfe0', 'id': 'aws://us-east-1c/vol-03fa29c13d6330de2', },
     ]
+
     print "requireds count: %s" % len(requireds)
 
     missings = []
@@ -129,6 +135,16 @@ def main():
 
     for missing in missings:
         snaps = getSnapshotsByVolumeId(getVolumeId(missing['id']), snapshots)
+
+        if len(snaps) == 0:
+            print " ".join([
+                "# cannot find snapshots for name",
+                missing['name'],
+                "id",
+                missing['id']
+            ])
+            continue
+
         random.shuffle(snaps)
 
         latest_snap = None
@@ -141,11 +157,12 @@ def main():
 
         print " ".join([
             'aws ec2 create-volume',
+            '--profile', args.aws_creds_profile,
             '--region', region,
             '--availability-zone', getAvailabilityZone(missing['id']),
             ' --volume-type gp2',
             '--snapshot-id', latest_snap.id,
-            '--tag-specifications "ResourceType=string,Tags=[{Key=name,Value=kubernetes-dynamic-%s},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=%s},{Key=old_volumeid,Value=%s}]"' % (missing['name'], latest_snap.id, missing['id']),
+            '--tag-specifications "ResourceType=volume,Tags=[{Key=name,Value=kubernetes-dynamic-%s},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=%s},{Key=old_volumeid,Value=%s}]"' % (missing['name'], latest_snap.id, missing['id']),
             ';',
         ])
 
