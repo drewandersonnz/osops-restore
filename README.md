@@ -20,6 +20,12 @@ aws ec2 create-volume --region us-east-1 --availability-zone us-east-1a --volume
     "CreateTime": "YYYY-MM-DDTHH:MM:SS.000Z",
     "Size": 80
 }
+
+should be able to pipe through:
+jq '"aws://" + .AvailabilityZone + "/" + .VolumeId' | tr -d '"'
+
+to get:
+aws://us-east-1a/vol-1234567890abcdef0
 ```
 * edit PV definitions to point to new EBS volume
 ```
