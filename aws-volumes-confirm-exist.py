@@ -78,7 +78,12 @@ def main():
 
     volumes = getVolumesByRegion(region)
 
-    print volumes
+    volumeids = [v.id for v in volumes]
+
+    print volumeids
+
+    ospv = "pvc-02744467-94ca-11e7-b0cb-12b5519f9b58"
+    osid = "aws://us-east-1c/vol-04f527a64d902913a"
 
     #for volume in volumes:
     #    testVolume(volume, region=region, args=args, )
