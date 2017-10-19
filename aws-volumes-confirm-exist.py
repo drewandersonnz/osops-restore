@@ -88,6 +88,8 @@ def main():
     """ main() """
     logger.debug("main()")
 
+    extra_command = '| jq \'"aws://" + .AvailabilityZone + "/" + .VolumeId\' | tr -d \'"\''
+
     args = parse_args()
 
     if args.verbose > 0:
@@ -162,7 +164,8 @@ def main():
             '--availability-zone', getAvailabilityZone(missing['id']),
             ' --volume-type gp2',
             '--snapshot-id', latest_snap.id,
-            '--tag-specifications "ResourceType=volume,Tags=[{Key=name,Value=kubernetes-dynamic-%s},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=%s},{Key=old_volumeid,Value=%s}]"' % (missing['name'], latest_snap.id, missing['id']),
+            '--tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=kubernetes-dynamic-%s},{Key=restoredate,Value=20171019},{Key=restoresnapid,Value=%s},{Key=old_volumeid,Value=%s}]"' % (missing['name'], latest_snap.id, missing['id']),
+            extra_command,
             ';',
         ])
 
