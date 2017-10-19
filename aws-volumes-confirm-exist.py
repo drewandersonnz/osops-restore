@@ -84,16 +84,16 @@ def main():
 
     print "\n".join(volumeids)
 
-    ospv = "pvc-02744467-94ca-11e7-b0cb-12b5519f9b58"
-    osid = "aws://us-east-1c/vol-04f527a64d902913a"
+    requireds = [
+        {'name': 'pvc-024940fb-7e2d-11e7-9104-125b034d2f46', 'id': 'aws://us-east-1c/vol-036d1dd4491d03523', },
+        {'name': 'pvc-0250be99-90d9-11e7-8584-123713f594ec', 'id': 'aws://us-east-1c/vol-0c2e7342add799bb0', },
+        {'name': 'pvc-02744467-94ca-11e7-b0cb-12b5519f9b58', 'id': 'aws://us-east-1c/vol-04f527a64d902913a', },
+    ]
 
-    if getVolumeId(osid) not in volumeids:
-        print "problem: pvid not in volumeids [%s] [%s]" % (ospv, osid)
+    for required in requireds:
+        if getVolumeId(required['id']) not in volumeids:
+            print "problem: pvid not in volumeids [%s] [%s]" % (required['name'], required['id'])
 
-
-
-    #for volume in volumes:
-    #    testVolume(volume, region=region, args=args, )
 
 if __name__ == "__main__":
     main()
