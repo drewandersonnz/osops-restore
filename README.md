@@ -66,4 +66,4 @@ aws://us-east-1a/vol-1234567890abcdef0
 ```
 oc patch pv pvc-422c7fa0-b519-11e7-92e8-0a46c474dfe0 --type=json -p '[{"op":"replace", "path": "/spec/awsElasticBlockStore/volumeID", "value": "aws://us-east-1c/vol-03fa29c13d6330de3" }]'
 ```
-see: (update-pv-volume.sh)
+see: [update-pv-volume.sh]
