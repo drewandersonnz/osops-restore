@@ -78,7 +78,9 @@ def main():
     volumeids = sorted([v.id for v in volumes])
 
     requireds = [
-        {'name': 'pvc-f4ff6be2-b528-11e7-bbc4-0ac586c2eb16', 'id': 'aws://us-east-1c/vol-0f13e0991ca087b57', },
+
+        {'name': 'pvc--6673-11e7-b866-', 'id': 'aws://us-east-1c/vol-', },
+
     ]
 
     print "requireds count: %s" % len(requireds)
